@@ -1,0 +1,8 @@
+[package]
+name = "compte-rendu"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "compte-rendu"
+path = "src/main.rs"
