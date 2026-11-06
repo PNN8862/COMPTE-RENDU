@@ -70,6 +70,36 @@ fn lire_liste(invite: &str) -> Vec<String> {
     v
 }
 
+
+fn prochain_numero() -> String {
+    let dossier_seq = env::var("HOME").unwrap_or_else(|_| ".".into());
+    let chemin_seq = format!("{dossier_seq}/.compte-rendu.seq");
+    let courant: u64 = fs::read_to_string(&chemin_seq)
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(0);
+    let suivant = courant + 1;
+    if let Some(parent) = std::path::Path::new(&chemin_seq).parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let _ = fs::write(&chemin_seq, suivant.to_string());
+    let annee = chrono_annee();
+    format!("CR-{annee}-{suivant:04}")
+}
+
+#[cfg(unix)]
+fn chrono_annee() -> String {
+    std::process::Command::new("date").arg("+%Y").output()
+        .ok().filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .unwrap_or_default()
+}
+
+#[cfg(not(unix))]
+fn chrono_annee() -> String {
+    String::new()
+}
+
 fn mode_manuel() -> BTreeMap<String, String> {
     let mut d = BTreeMap::new();
     println!("=== Rédaction guidée du compte rendu d'intervention ===\n");
@@ -80,7 +110,11 @@ fn mode_manuel() -> BTreeMap<String, String> {
                 let items = lire_liste(&format!("{invite} :"));
                 d.insert(cle.to_string(), items.join("\n"));
             } else {
-                let s = lire_ligne(&format!("{invite} :"));
+                let mut s = lire_ligne(&format!("{invite} :"));
+                if s.is_empty() && cle == &"numero" {
+                    s = prochain_numero();
+                    println!("  → Numéro attribué automatiquement : {s}");
+                }
                 d.insert(cle.to_string(), s);
             }
         }
@@ -169,7 +203,12 @@ fn mode_brouillon(chemin: &str) -> BTreeMap<String, String> {
         let propre = nettoyer(&retirer_etiquette(ligne));
         d.entry(courant.to_string()).or_default().push(propre);
     }
-    d.into_iter().map(|(k, v)| (k, v.join("\n"))).collect()
+    let mut d: BTreeMap<String, String> =
+        d.into_iter().map(|(k, v)| (k, v.join("\n"))).collect();
+    if bloc(&d, "numero").is_empty() {
+        d.insert("numero".into(), prochain_numero());
+    }
+    d
 }
 
 fn cocher(valeur: &str, option: &str) -> &'static str {

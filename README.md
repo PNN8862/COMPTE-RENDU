@@ -44,6 +44,12 @@ compte-rendu cadre                    # affiche le cadre de référence
 5. 🚀 Résultat & Clôture (statut final, tests de validation, recommandations)
 6. ✍️ Validation & Signatures (commentaires client, visas)
 
+## Numérotation automatique
+
+Si le numéro de rapport est laissé vide (mode `nouveau`) ou absent du brouillon (mode `restructurer`),
+un numéro unique est attribué automatiquement au format `CR-<année>-<séquence>` (ex : `CR-2025-0001`).
+Le compteur est persistant : il est mémorisé dans `~/.compte-rendu.seq` et s'incrémente à chaque rapport.
+
 ## Restructuration d'un brouillon
 
 Chaque ligne du brouillon est classée automatiquement dans le bon champ par mots-clés
